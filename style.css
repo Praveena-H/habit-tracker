@@ -4,6 +4,14 @@ body {
     margin: 0;
     padding: 0;
 }
+body.dark-mode {
+    background: #121212;
+    color: #f0f0f0;
+}
+body.dark-mode .habit-card {
+    background: #1e1e1e;
+    box-shadow: 0 2px 5px rgba(255,255,255,0.1);
+}
 
 header {
     text-align: center;
