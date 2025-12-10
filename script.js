@@ -20,6 +20,21 @@ const modal = document.getElementById('habit-selection');
 if(selectedHabits.length === 0) {
     modal.style.display = 'block';
 }
+if(habitData[today]) {
+    habitCard.classList.add('completed');
+    habitData.streak = (habitData.streak || 0) + 1;
+
+    // Reward animation on milestone streaks
+    if(habitData.streak % 7 === 0) {
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+        alert(`🎉 Congrats! You hit a ${habitData.streak}-day streak for ${habitCard.querySelector('h3').textContent}!`);
+    }
+}
+
 
 // Generate habit selection buttons
 habits.forEach(habit => {
@@ -123,6 +138,20 @@ function renderWeeklyChart() {
         }
     });
 }
+function updateMotivation() {
+    const streaks = selectedHabits.map(key => {
+        const data = JSON.parse(localStorage.getItem(key)) || {};
+        return data.streak || 0;
+    });
+    const maxStreak = Math.max(...streaks);
+    const msg = maxStreak >= 7 ? "Keep the streak going! 🚀" :
+                maxStreak >= 3 ? "Nice! You're building momentum!" :
+                "Start strong and track your habits today!";
+    document.getElementById('motivational-msg').textContent = msg;
+}
+
+// Call after any habit update
+updateMotivation();
 
 // Utility to generate random pastel colors
 function getRandomColor(alpha) {
