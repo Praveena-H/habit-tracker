@@ -15,6 +15,11 @@ let selectedHabits = JSON.parse(localStorage.getItem('selectedHabits')) || [];
 const habitSelectionDiv = document.querySelector('.habit-options');
 const dashboard = document.getElementById('dashboard');
 const modal = document.getElementById('habit-selection');
+const toggleBtn = document.getElementById('toggle-mode');
+toggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    toggleBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+});
 
 // Show habit selection modal if no habits selected
 if(selectedHabits.length === 0) {
