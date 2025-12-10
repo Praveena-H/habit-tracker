@@ -90,6 +90,51 @@ function renderDashboard() {
         dashboard.appendChild(habitCard);
     });
 }
+function renderWeeklyChart() {
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    const datasets = selectedHabits.map(key => {
+        const habitData = JSON.parse(localStorage.getItem(key)) || {};
+        const last7Days = labels.map(day => {
+            // Simple mapping: check if habit done in last 7 days
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - labels.indexOf(day)));
+            const dayStr = date.toDateString();
+            return habitData[dayStr] ? 1 : 0;
+        });
+        return {
+            label: habits.find(h => h.key === key).name,
+            data: last7Days,
+            fill: true,
+            backgroundColor: getRandomColor(0.2),
+            borderColor: getRandomColor(1),
+            tension: 0.4
+        };
+    });
+
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true, max: 1 } }
+        }
+    });
+}
+
+// Utility to generate random pastel colors
+function getRandomColor(alpha) {
+    const r = Math.floor(Math.random()*200 + 30);
+    const g = Math.floor(Math.random()*200 + 30);
+    const b = Math.floor(Math.random()*200 + 30);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Call after dashboard render
+renderWeeklyChart();
+
 
 // Initial render if habits already selected
 if(selectedHabits.length > 0) renderDashboard();
