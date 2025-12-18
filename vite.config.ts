@@ -5,8 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // For GitHub Pages: change '/habit-tracker/' to match your repo name
-  base: mode === "production" ? "/habit-tracker/" : "/",
+  // Use /habit-tracker/ only for GitHub Pages deployment (set via env variable)
+  base: process.env.GITHUB_PAGES === "true" ? "/habit-tracker/" : "/",
   server: {
     host: "::",
     port: 8080,
