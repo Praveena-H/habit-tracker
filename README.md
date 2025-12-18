@@ -19,7 +19,7 @@ A beautiful, modern habit tracking application to help you build better routines
 
 ## 🚀 Live Demo
 
-- **GitHub Pages**: [View Live App](https://yourusername.github.io/habit-tracker/)
+- **GitHub Pages**: [View Live App](https://praveena-h.github.io/habit-tracker/)
 
 ## 🛠️ Tech Stack
 
