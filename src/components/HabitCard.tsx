@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { Habit, HabitStats } from '@/types/habit';
-import { Check, Flame, Trash2, TrendingUp } from 'lucide-react';
+import { Check, Flame, Trash2, TrendingUp, Calendar, Trophy, Clock, Target, StickyNote } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, subDays } from 'date-fns';
+import { format, subDays, isFuture, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { HabitCalendar } from './HabitCalendar';
+import { AchievementsDisplay } from './AchievementsDisplay';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface HabitCardProps {
   habit: Habit;
@@ -24,14 +32,18 @@ export const HabitCard = ({
 }: HabitCardProps) => {
   const [justCompleted, setJustCompleted] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(new Date(), 6 - i);
     return {
       date: format(date, 'yyyy-MM-dd'),
-      day: format(date, 'EEE')[0],
-      isToday: i === 6,
+      dayShort: format(date, 'EEE'),
+      dayNum: format(date, 'd'),
+      isToday: isToday(date),
+      isFuture: isFuture(date) && !isToday(date),
     };
   });
 
@@ -42,6 +54,15 @@ export const HabitCard = ({
     }
     onToggle(today);
   };
+
+  const handleDayToggle = (date: string) => {
+    const dateObj = new Date(date);
+    // Prevent toggling future dates
+    if (isFuture(dateObj) && !isToday(dateObj)) return;
+    onToggle(date);
+  };
+
+  const goalProgress = habit.goal ? (stats.currentStreak / habit.goal) * 100 : null;
 
   return (
     <div
@@ -62,9 +83,12 @@ export const HabitCard = ({
               "relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-2xl sm:text-3xl",
               "transition-all duration-300 shrink-0",
               isCompletedToday
-                ? "bg-success text-success-foreground animate-pulse-glow"
+                ? "text-white animate-pulse-glow"
                 : "bg-secondary hover:bg-secondary/80"
             )}
+            style={{
+              backgroundColor: isCompletedToday ? habit.color : undefined,
+            }}
           >
             {isCompletedToday ? (
               <Check 
@@ -82,7 +106,7 @@ export const HabitCard = ({
             <h3 className="font-display font-semibold text-foreground truncate">
               {habit.name}
             </h3>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               {stats.currentStreak > 0 && (
                 <div className="flex items-center gap-1 text-streak">
                   <Flame className={cn(
@@ -92,12 +116,67 @@ export const HabitCard = ({
                   <span className="text-sm font-medium">{stats.currentStreak}</span>
                 </div>
               )}
-              <button
-                onClick={() => setShowStats(!showStats)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <TrendingUp className="w-4 h-4" />
-              </button>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setShowStats(!showStats)}
+                      className={cn(
+                        "p-1 rounded transition-colors",
+                        showStats ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Stats</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setShowCalendar(!showCalendar)}
+                      className={cn(
+                        "p-1 rounded transition-colors",
+                        showCalendar ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Calendar</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setShowAchievements(!showAchievements)}
+                      className={cn(
+                        "p-1 rounded transition-colors",
+                        showAchievements ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Trophy className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Achievements</TooltipContent>
+                </Tooltip>
+              </div>
+
+              {/* Habit Info Badges */}
+              {habit.reminderTime && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                      <Clock className="w-3 h-3" />
+                      {habit.reminderTime}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Reminder time</TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>
@@ -112,31 +191,63 @@ export const HabitCard = ({
         </Button>
       </div>
 
-      {/* Weekly Progress */}
+      {/* Goal Progress */}
+      {habit.goal && (
+        <div className="mt-3 flex items-center gap-2">
+          <Target className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Progress value={Math.min(goalProgress || 0, 100)} className="h-2 flex-1" />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {stats.currentStreak}/{habit.goal} days
+          </span>
+        </div>
+      )}
+
+      {/* Notes */}
+      {habit.notes && (
+        <div className="mt-3 flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg p-2">
+          <StickyNote className="w-3 h-3 mt-0.5 shrink-0" />
+          <p className="line-clamp-2">{habit.notes}</p>
+        </div>
+      )}
+
+      {/* Weekly Progress - Enhanced */}
       <div className="flex justify-between gap-1 mt-4 px-1">
-        {last7Days.map(({ date, day, isToday }) => {
+        {last7Days.map(({ date, dayShort, dayNum, isToday: today, isFuture: future }) => {
           const completed = isCompletedOnDate(date);
           return (
-            <button
-              key={date}
-              onClick={() => onToggle(date)}
-              className="flex flex-col items-center gap-1 flex-1"
-            >
-              <span className="text-[10px] sm:text-xs text-muted-foreground uppercase">
-                {day}
-              </span>
-              <div
-                className={cn(
-                  "w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-200",
-                  completed
-                    ? "bg-success text-success-foreground"
-                    : "bg-muted/50 hover:bg-muted",
-                  isToday && !completed && "ring-2 ring-primary/30"
-                )}
-              >
-                {completed && <Check className="w-3 h-3 sm:w-4 sm:h-4" />}
-              </div>
-            </button>
+            <Tooltip key={date}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleDayToggle(date)}
+                  disabled={future}
+                  className={cn(
+                    "flex flex-col items-center gap-1 flex-1",
+                    future && "opacity-40 cursor-not-allowed"
+                  )}
+                >
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">
+                    {dayShort}
+                  </span>
+                  <div
+                    className={cn(
+                      "w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-200 text-[10px] sm:text-xs font-medium",
+                      completed && "text-white",
+                      !completed && !future && "bg-muted/50 hover:bg-muted",
+                      today && !completed && "ring-2 ring-primary/30"
+                    )}
+                    style={{
+                      backgroundColor: completed ? habit.color : undefined,
+                    }}
+                  >
+                    {completed ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : dayNum}
+                  </div>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{format(new Date(date), 'EEEE, MMMM d')}</p>
+                {future && <p className="text-xs text-muted-foreground">Future date</p>}
+              </TooltipContent>
+            </Tooltip>
           );
         })}
       </div>
@@ -163,6 +274,20 @@ export const HabitCard = ({
             <p className="text-[10px] sm:text-xs text-muted-foreground">30d Rate</p>
           </div>
         </div>
+      )}
+
+      {/* Calendar View */}
+      {showCalendar && (
+        <HabitCalendar
+          completedDates={habit.completedDates}
+          onToggle={handleDayToggle}
+          color={habit.color}
+        />
+      )}
+
+      {/* Achievements View */}
+      {showAchievements && (
+        <AchievementsDisplay stats={stats} />
       )}
     </div>
   );

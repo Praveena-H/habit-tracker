@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Habit, HabitStats } from '@/types/habit';
-import { format, subDays, isAfter, isBefore, startOfDay, differenceInDays } from 'date-fns';
+import { Habit, HabitStats, FrequencyType } from '@/types/habit';
+import { format, subDays, startOfDay, differenceInDays } from 'date-fns';
 
 const STORAGE_KEY = 'habit-tracker-habits';
 
 const getStoredHabits = (): Habit[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const habits = JSON.parse(stored);
+    // Migrate old habits without frequency
+    return habits.map((habit: Habit) => ({
+      ...habit,
+      frequency: habit.frequency || 'daily',
+    }));
   } catch {
     return [];
   }
@@ -17,6 +23,17 @@ const saveHabits = (habits: Habit[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
 };
 
+interface AddHabitParams {
+  name: string;
+  emoji: string;
+  color: string;
+  frequency?: FrequencyType;
+  customDays?: number[];
+  reminderTime?: string;
+  goal?: number;
+  notes?: string;
+}
+
 export const useHabits = () => {
   const [habits, setHabits] = useState<Habit[]>(getStoredHabits);
 
@@ -24,14 +41,19 @@ export const useHabits = () => {
     saveHabits(habits);
   }, [habits]);
 
-  const addHabit = useCallback((name: string, emoji: string, color: string) => {
+  const addHabit = useCallback((params: AddHabitParams) => {
     const newHabit: Habit = {
       id: crypto.randomUUID(),
-      name,
-      emoji,
-      color,
+      name: params.name,
+      emoji: params.emoji,
+      color: params.color,
       createdAt: new Date().toISOString(),
       completedDates: [],
+      frequency: params.frequency || 'daily',
+      customDays: params.customDays,
+      reminderTime: params.reminderTime,
+      goal: params.goal,
+      notes: params.notes,
     };
     setHabits(prev => [...prev, newHabit]);
   }, []);
