@@ -1,143 +1,46 @@
 
 
-# Three-Column Dashboard Layout
+# User-Customizable Soft 75 Rules
 
-Transform the current single-column layout into a Duolingo-inspired three-column dashboard with habits list, selected habit details, and achievements/progress panel.
+Extend the previously approved Soft 75 plan so users define their own rules per challenge — mirroring the habit creation flow.
 
----
+## Schema change (vs. prior plan)
 
-## Layout Overview
+`soft75_rules` table stays, but no defaults are seeded. Instead, when a user starts a new challenge they go through a **rule builder** dialog (similar to `AddHabitDialog`).
 
-```text
-+------------------+------------------------+------------------+
-|   LEFT SIDEBAR   |      MAIN CONTENT      |   RIGHT PANEL    |
-|   (Habits List)  |   (Selected Habit)     |  (Progress/Goals)|
-+------------------+------------------------+------------------+
-|                  |                        |                  |
-| 📚 Reading       |   📚 Reading           | Overall Progress |
-|                  |                        |  ━━━━━━━━ 65%    |
-| 🏃 Exercise  ←   |   Current Streak: 7    |                  |
-|   (selected)     |   Best Streak: 14      | ────────────────  |
-|                  |   Completion: 85%      |                  |
-| 💤 Sleep         |                        | 🏆 Achievements  |
-|                  |   [Weekly Progress]    |  🔥 Week Warrior |
-| 🧘 Meditate      |   Mon Tue Wed...       |  💪 Getting Serious|
-|                  |                        |                  |
-|                  |   [Calendar View]      | ────────────────  |
-|                  |   January 2026         |                  |
-|                  |                        | [+ Add Habit]    |
-+------------------+------------------------+------------------+
-```
+Columns: `id`, `challenge_id` (FK, cascade), `label` (text), `emoji` (text, optional), `description` (text, optional), `order_index` (int). RLS: user can CRUD rules only for their own challenges (joined via `challenge_id → soft75_challenges.user_id = auth.uid()`).
 
----
+## New flow
 
-## New Components to Create
+1. **Start Challenge dialog** (`StartChallengeDialog.tsx`):
+   - Pick a start date (defaults to today, no future dates beyond today).
+   - Add 1–10 custom rules. Each rule: emoji (via existing `EmojiPicker`), label (required), short description (optional).
+   - Reorder rules (up/down buttons).
+   - "Start Challenge" creates the `soft75_challenges` row + all `soft75_rules` rows in one transaction.
 
-### 1. HabitsSidebar Component
-A left sidebar displaying all habits as selectable items:
-- Habit emoji + name
-- Current streak indicator
-- Visual highlight for selected habit
-- "Completed today" checkmark indicator
+2. **Edit Rules dialog** (`EditRulesDialog.tsx`) — available from `Soft75View` header:
+   - Edit label/emoji/description of existing rules.
+   - Add a new rule mid-challenge (applies from edit date forward; past logs untouched).
+   - Soft-delete a rule (mark inactive via `archived_at` column) so historical day completeness still reads correctly.
 
-### 2. HabitDetailView Component
-The main content area showing the selected habit:
-- Large emoji and habit name header
-- Statistics cards (current streak, best streak, completion rate, total)
-- Weekly progress with day toggles
-- Full calendar view for historical data
-- Goal progress bar (if set)
-- Notes section (if any)
+3. **Daily checklist** renders one toggle per active rule for that date. Day is "complete" when all active-on-that-date rules are checked. Lenient handling unchanged: misses don't reset.
 
-### 3. ProgressPanel Component
-Right sidebar with overall progress and gamification:
-- Overall daily progress bar (X of Y habits done)
-- Best streak across all habits
-- Trophy showcase (unlocked achievements grid)
-- Next achievements to unlock with progress bars
-- "Add New Habit" button prominently placed
+## Files (delta from prior plan)
 
-### 4. DashboardLayout Component
-A wrapper component that manages the three-column grid and state:
-- Responsive: 3 columns on desktop, stacked on mobile/tablet
-- Manages selected habit state
-- Coordinates data between panels
+- Add: `src/components/soft75/StartChallengeDialog.tsx`
+- Modify: `src/components/soft75/EditRulesDialog.tsx` (full CRUD instead of label-only edit)
+- Modify: `src/hooks/useSoft75.ts` to expose `createChallenge(rules)`, `addRule`, `updateRule`, `archiveRule`
+- Add `archived_at timestamptz` to `soft75_rules`
 
----
+Everything else from the previously approved plan (auth, profiles, habits → Supabase migration, tab toggle, 75-cell grid, lenient counter) stays the same.
 
-## Files to Modify
+## Implementation order (updated)
 
-### `src/pages/Index.tsx`
-- Replace current layout with new DashboardLayout
-- Move state management logic to coordinate selection
-
-### `src/components/HabitCard.tsx`
-- Refactor into HabitDetailView for the center panel
-- Create a simplified HabitListItem for the sidebar
-
----
-
-## Technical Details
-
-### State Management
-```typescript
-// In Index.tsx or DashboardLayout
-const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
-const selectedHabit = habits.find(h => h.id === selectedHabitId);
-```
-
-### Responsive Grid
-```css
-/* Desktop: 3 columns */
-grid-template-columns: 260px 1fr 300px;
-
-/* Tablet: 2 columns (hide right panel or make collapsible) */
-grid-template-columns: 220px 1fr;
-
-/* Mobile: Single column with tabs/navigation */
-```
-
-### Component Structure
-```text
-src/components/
-├── dashboard/
-│   ├── HabitsSidebar.tsx      (left - habits list)
-│   ├── HabitDetailView.tsx    (center - selected habit)
-│   ├── ProgressPanel.tsx      (right - achievements)
-│   └── DashboardLayout.tsx    (wrapper)
-├── HabitListItem.tsx          (sidebar item)
-└── ... (existing components)
-```
-
----
-
-## Implementation Steps
-
-1. **Create DashboardLayout** - Set up the 3-column responsive grid structure
-
-2. **Build HabitsSidebar** - Extract habit list into a selectable sidebar with:
-   - Habit items showing emoji, name, streak
-   - Selection state management
-   - Today's completion status indicator
-
-3. **Create HabitDetailView** - Refactor HabitCard into a detailed center panel:
-   - Larger display with full statistics
-   - Integrated calendar view
-   - Weekly progress toggles
-
-4. **Build ProgressPanel** - Aggregate achievements and progress:
-   - Calculate overall stats across all habits
-   - Display achievement badges
-   - Show next goals with progress
-   - Add New Habit button
-
-5. **Update Index.tsx** - Integrate all components:
-   - Wire up selection state
-   - Handle empty states (no habits, no selection)
-   - Ensure mobile responsiveness
-
-6. **Mobile Responsiveness** - Add responsive behavior:
-   - Desktop: Full 3-column layout
-   - Tablet: Collapsible sidebar or 2-column
-   - Mobile: Tab-based navigation between sections
+1. Connect Supabase, create `profiles` + `habits` tables, migrate `useHabits`
+2. Auth pages + `ProtectedRoute` + sign-out
+3. Soft 75 tables (`soft75_challenges`, `soft75_rules` with `archived_at`, `soft75_daily_logs`)
+4. `useSoft75` hook with full rule CRUD
+5. `StartChallengeDialog` (rule builder) and `EditRulesDialog`
+6. `Soft75View` + `Soft75Checklist` + `Soft75Grid`
+7. Wire Habits / Soft 75 tab toggle into `DashboardLayout`
 
