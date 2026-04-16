@@ -14,7 +14,188 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      habits: {
+        Row: {
+          color: string
+          completed_dates: string[]
+          created_at: string
+          custom_days: number[] | null
+          emoji: string
+          frequency: string
+          goal: number | null
+          id: string
+          name: string
+          notes: string | null
+          reminder_time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color: string
+          completed_dates?: string[]
+          created_at?: string
+          custom_days?: number[] | null
+          emoji?: string
+          frequency?: string
+          goal?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          reminder_time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          completed_dates?: string[]
+          created_at?: string
+          custom_days?: number[] | null
+          emoji?: string
+          frequency?: string
+          goal?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          reminder_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      soft75_challenges: {
+        Row: {
+          created_at: string
+          id: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          start_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      soft75_daily_logs: {
+        Row: {
+          challenge_id: string
+          completed: boolean
+          created_at: string
+          id: string
+          log_date: string
+          rule_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean
+          created_at?: string
+          id?: string
+          log_date: string
+          rule_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean
+          created_at?: string
+          id?: string
+          log_date?: string
+          rule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soft75_daily_logs_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "soft75_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "soft75_daily_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "soft75_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      soft75_rules: {
+        Row: {
+          archived_at: string | null
+          challenge_id: string
+          created_at: string
+          description: string | null
+          emoji: string | null
+          id: string
+          label: string
+          order_index: number
+        }
+        Insert: {
+          archived_at?: string | null
+          challenge_id: string
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          label: string
+          order_index?: number
+        }
+        Update: {
+          archived_at?: string | null
+          challenge_id?: string
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          label?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soft75_rules_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "soft75_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
